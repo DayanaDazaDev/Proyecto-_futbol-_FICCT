@@ -216,45 +216,45 @@ export default async function PublicTournamentPage({ params }: { params: Promise
                       let dateStr = 'TBD';
                       if (match.match_date) {
                         const d = new Date(match.match_date + "T12:00:00");
-                        dateStr = d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' }).toUpperCase();
+                        dateStr = d.toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' }).toUpperCase();
                       }
 
                       return (
-                        <div key={match.id} className="flex flex-col md:flex-row items-center justify-between bg-white/95 backdrop-blur shadow-xl rounded-2xl p-4 hover:scale-[1.01] transition-transform">
-                          <div className="flex items-center gap-4 w-full md:w-[60%] justify-center md:justify-start mb-4 md:mb-0">
-                            <Link href={`/c/${tournament.slug}/equipo/${match.home_team_id}`} className="flex flex-col items-center hover:opacity-80 transition-opacity w-24">
-                              <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-md border border-gray-100 overflow-hidden mb-2">
-                                {homeTeam.logo_url ? <img src={homeTeam.logo_url} className="w-full h-full object-cover" /> : <span className="text-xl font-black text-gray-300">{homeTeam.name.charAt(0)}</span>}
+                        <div key={match.id} className="flex flex-col md:flex-row w-full rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all hover:scale-[1.01]">
+                          {/* Bloque Izquierdo: Equipos (Oscuro) */}
+                          <div className="flex flex-1 items-center justify-center gap-4 bg-[#1e1e24] p-6 text-white border-r border-white/5">
+                            <Link href={`/c/${tournament.slug}/equipo/${match.home_team_id}`} className="flex items-center gap-3 hover:opacity-80 transition-opacity justify-end w-[40%]">
+                              <span className="font-bold text-gray-200 text-sm sm:text-lg text-right line-clamp-1">{homeTeam.name}</span>
+                              <div className="w-8 h-8 sm:w-12 sm:h-12 shrink-0 flex items-center justify-center">
+                                {homeTeam.logo_url ? <img src={homeTeam.logo_url} className="w-full h-full object-contain" /> : <div className="w-full h-full rounded-full border-2 border-gray-600 flex items-center justify-center text-gray-500 font-black">{homeTeam.name.charAt(0)}</div>}
                               </div>
-                              <span className="font-black text-gray-800 text-xs text-center uppercase tracking-wide line-clamp-1">{homeTeam.name}</span>
                             </Link>
                             
-                            <div className="flex flex-col items-center min-w-[80px]">
+                            <div className="w-[10%] flex justify-center">
                               {match.is_played ? (
-                                <div className="text-3xl font-black text-gray-900 tracking-widest drop-shadow-sm">
+                                <div className="text-xl sm:text-3xl font-black text-white drop-shadow-md">
                                   {match.home_goals} - {match.away_goals}
                                 </div>
                               ) : (
-                                <div className="text-xs font-black text-blue-600 bg-blue-50 px-3 py-1 rounded-full uppercase tracking-widest border border-blue-100">VS</div>
+                                <div className="text-gray-500 text-xs sm:text-sm font-medium tracking-widest italic">vs</div>
                               )}
                             </div>
                             
-                            <Link href={`/c/${tournament.slug}/equipo/${match.away_team_id}`} className="flex flex-col items-center hover:opacity-80 transition-opacity w-24">
-                              <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-md border border-gray-100 overflow-hidden mb-2">
-                                {awayTeam.logo_url ? <img src={awayTeam.logo_url} className="w-full h-full object-cover" /> : <span className="text-xl font-black text-gray-300">{awayTeam.name.charAt(0)}</span>}
+                            <Link href={`/c/${tournament.slug}/equipo/${match.away_team_id}`} className="flex items-center gap-3 hover:opacity-80 transition-opacity justify-start w-[40%]">
+                              <div className="w-8 h-8 sm:w-12 sm:h-12 shrink-0 flex items-center justify-center">
+                                {awayTeam.logo_url ? <img src={awayTeam.logo_url} className="w-full h-full object-contain" /> : <div className="w-full h-full rounded-full border-2 border-gray-600 flex items-center justify-center text-gray-500 font-black">{awayTeam.name.charAt(0)}</div>}
                               </div>
-                              <span className="font-black text-gray-800 text-xs text-center uppercase tracking-wide line-clamp-1">{awayTeam.name}</span>
+                              <span className="font-bold text-gray-200 text-sm sm:text-lg text-left line-clamp-1">{awayTeam.name}</span>
                             </Link>
                           </div>
 
-                          <div className="flex flex-col items-center md:items-end w-full md:w-[40%]">
-                            <div className="bg-blue-600 text-white font-black px-6 py-2 rounded-xl text-sm tracking-widest uppercase mb-2 shadow-md">
+                          {/* Bloque Derecho: Fecha/Hora/Competencia (Distinguido) */}
+                          <div className="flex flex-col items-center justify-center bg-[#a65d57] text-white p-5 md:w-[320px] shrink-0">
+                            <div className="text-xl sm:text-2xl font-black uppercase tracking-wide mb-1 drop-shadow-sm">
                               {dateStr}
                             </div>
-                            <div className="flex items-center gap-2 text-xs font-bold text-gray-500 uppercase tracking-widest">
-                              <span>{match.match_time ? `${match.match_time} H` : 'Hora TBD'}</span>
-                              <span className="text-gray-300">|</span>
-                              <span className="truncate max-w-[150px]">{match.location || 'Cancha TBD'}</span>
+                            <div className="text-[10px] sm:text-xs font-semibold text-white/90 tracking-[0.15em] uppercase">
+                              {match.match_time ? `${match.match_time}` : 'TBD'} | {tournament.name}
                             </div>
                           </div>
                         </div>
