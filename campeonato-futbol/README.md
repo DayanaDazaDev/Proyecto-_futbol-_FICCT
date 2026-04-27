@@ -23,4 +23,4 @@ Pierre Plantarrosa - [pierreelpro19@gmail.com]
 
 ## 📄 Licencia
 
-Proyecto académico - Universidad Autonoma Gabriel Rene Moreno
+Proyecto académico - Universidad Autonoma Gabriel Rene Moreno (Subiendo a prod para presentacion)
