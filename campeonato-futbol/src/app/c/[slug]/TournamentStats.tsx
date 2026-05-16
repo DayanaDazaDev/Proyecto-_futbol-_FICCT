@@ -1,0 +1,180 @@
+import { createClient } from "@/utils/supabase/server";
+
+interface Props {
+  tournamentId: string;
+  teams: { id: string; name: string; logo_url: string | null }[];
+  allPlayers: { id: string; team_id: string; name: string; photo_url: string | null }[];
+}
+
+type EventRow = {
+  player_id: string;
+  event_type: string;
+  is_own_goal: boolean;
+};
+
+export default async function TournamentStats({ tournamentId, teams, allPlayers }: Props) {
+  const supabase = await createClient();
+
+  let events: EventRow[] = [];
+  try {
+    const matchIdsRes = await supabase
+      .from("matches")
+      .select("id")
+      .eq("tournament_id", tournamentId);
+
+    const matchIds = matchIdsRes.data?.map((m) => m.id) ?? [];
+
+    if (matchIds.length > 0) {
+      const eventsRes = await supabase
+        .from("match_events")
+        .select("player_id, event_type, is_own_goal")
+        .in("match_id", matchIds);
+      events = (eventsRes.data as EventRow[]) ?? [];
+    }
+  } catch {
+    // match_events table may not exist yet (migration pending)
+    return null;
+  }
+
+  if (events.length === 0) return null;
+
+  // Aggregate stats per player
+  const stats: Record<string, { goals: number; yellow: number; red: number; mvp: number; assists: number }> = {};
+  for (const ev of events as EventRow[]) {
+    if (!stats[ev.player_id]) stats[ev.player_id] = { goals: 0, yellow: 0, red: 0, mvp: 0, assists: 0 };
+    if (ev.event_type === "goal" && !ev.is_own_goal) stats[ev.player_id].goals++;
+    if (ev.event_type === "yellow_card") stats[ev.player_id].yellow++;
+    if (ev.event_type === "red_card") stats[ev.player_id].red++;
+    if (ev.event_type === "mvp") stats[ev.player_id].mvp++;
+    if (ev.event_type === "assist") stats[ev.player_id].assists++;
+  }
+
+  const getPlayer = (id: string) => allPlayers.find(p => p.id === id);
+  const getTeam = (playerId: string) => {
+    const player = allPlayers.find(p => p.id === playerId);
+    return teams.find(t => t.id === player?.team_id);
+  };
+
+  // Scorers sorted by goals
+  const scorers = Object.entries(stats)
+    .filter(([, s]) => s.goals > 0)
+    .sort((a, b) => b[1].goals - a[1].goals)
+    .slice(0, 8);
+
+  // Cards (yellow + red)
+  const cardPlayers = Object.entries(stats)
+    .filter(([, s]) => s.yellow > 0 || s.red > 0)
+    .sort((a, b) => (b[1].yellow + b[1].red * 3) - (a[1].yellow + a[1].red * 3))
+    .slice(0, 5);
+
+  // Player of tournament score
+  const playerScores = Object.entries(stats).map(([pid, s]) => ({
+    playerId: pid,
+    score: s.goals * 3 + s.mvp * 5 + s.assists - s.yellow - s.red * 3,
+  })).sort((a, b) => b.score - a.score);
+
+  const topPlayer = playerScores[0];
+  const topPlayerData = topPlayer ? getPlayer(topPlayer.playerId) : null;
+  const topPlayerTeam = topPlayer ? getTeam(topPlayer.playerId) : null;
+  const topPlayerStats = topPlayer ? stats[topPlayer.playerId] : null;
+
+  if (scorers.length === 0 && !topPlayerData) return null;
+
+  return (
+    <section className="space-y-10 print:hidden">
+      <h2 className="text-2xl font-black text-white uppercase tracking-widest px-2">
+        📊 Estadísticas del Torneo
+      </h2>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        {/* Goleadores */}
+        {scorers.length > 0 && (
+          <div className="bg-white/5 backdrop-blur border border-white/10 rounded-2xl overflow-hidden">
+            <div className="px-5 py-3 border-b border-white/10 flex items-center gap-2">
+              <span className="text-xl">⚽</span>
+              <h3 className="text-white font-black uppercase tracking-wider text-sm">Tabla de Goleadores</h3>
+            </div>
+            <div className="divide-y divide-white/5">
+              {scorers.map(([pid, s], i) => {
+                const player = getPlayer(pid);
+                const team = getTeam(pid);
+                return (
+                  <div key={pid} className={`flex items-center gap-4 px-5 py-3 ${i === 0 ? "bg-yellow-400/10" : ""}`}>
+                    <span className={`w-6 text-center font-black text-sm ${i === 0 ? "text-yellow-400" : "text-white/40"}`}>{i + 1}</span>
+                    {player?.photo_url ? (
+                      <img src={player.photo_url} className="w-9 h-9 rounded-full object-cover border-2 border-white/20" alt={player.name} />
+                    ) : (
+                      <div className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center text-white font-black text-sm border-2 border-white/10">
+                        {player?.name?.charAt(0) || "?"}
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white font-bold text-sm truncate">{player?.name || "Jugador"}</p>
+                      <p className="text-white/50 text-xs truncate">{team?.name || ""}</p>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <span className={`text-2xl font-black ${i === 0 ? "text-yellow-400" : "text-white"}`}>{s.goals}</span>
+                      <span className="text-white/40 text-xs">⚽</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        <div className="space-y-6">
+          {/* Jugador del Torneo */}
+          {topPlayerData && topPlayerStats && (topPlayerStats.goals > 0 || topPlayerStats.mvp > 0) && (
+            <div className="bg-gradient-to-br from-yellow-400/20 to-yellow-600/10 border border-yellow-400/30 rounded-2xl p-5 text-center">
+              <p className="text-yellow-400 font-black uppercase tracking-widest text-xs mb-3">⭐ Jugador del Torneo</p>
+              {topPlayerData.photo_url ? (
+                <img src={topPlayerData.photo_url} className="w-20 h-20 rounded-full object-cover border-4 border-yellow-400 mx-auto mb-3 shadow-lg" alt={topPlayerData.name} />
+              ) : (
+                <div className="w-20 h-20 rounded-full bg-yellow-400/20 border-4 border-yellow-400 flex items-center justify-center text-yellow-400 font-black text-2xl mx-auto mb-3">
+                  {topPlayerData.name?.charAt(0)}
+                </div>
+              )}
+              <p className="text-white font-black text-lg">{topPlayerData.name}</p>
+              <p className="text-white/60 text-sm mb-3">{topPlayerTeam?.name}</p>
+              <div className="flex justify-center gap-4 text-xs">
+                <span className="text-white/80">⚽ {topPlayerStats.goals} goles</span>
+                <span className="text-white/80">⭐ {topPlayerStats.mvp} MVPs</span>
+                <span className="text-white/80">🤝 {topPlayerStats.assists} asist.</span>
+              </div>
+            </div>
+          )}
+
+          {/* Tarjetas */}
+          {cardPlayers.length > 0 && (
+            <div className="bg-white/5 backdrop-blur border border-white/10 rounded-2xl overflow-hidden">
+              <div className="px-5 py-3 border-b border-white/10 flex items-center gap-2">
+                <span className="text-xl">🟨</span>
+                <h3 className="text-white font-black uppercase tracking-wider text-sm">Tarjetas</h3>
+              </div>
+              <div className="divide-y divide-white/5">
+                {cardPlayers.map(([pid, s]) => {
+                  const player = getPlayer(pid);
+                  const team = getTeam(pid);
+                  return (
+                    <div key={pid} className="flex items-center gap-3 px-5 py-3">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-white font-bold text-sm truncate">{player?.name || "Jugador"}</p>
+                        <p className="text-white/50 text-xs truncate">{team?.name}</p>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        {s.yellow > 0 && <span className="text-xs font-bold bg-yellow-400/20 text-yellow-400 px-2 py-0.5 rounded">🟨 {s.yellow}</span>}
+                        {s.red > 0 && <span className="text-xs font-bold bg-red-400/20 text-red-400 px-2 py-0.5 rounded">🟥 {s.red}</span>}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}

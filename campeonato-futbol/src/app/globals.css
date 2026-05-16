@@ -1,26 +1,71 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap');
 @import "tailwindcss";
 
+/* ── Variables FICCT / UAGRM ── */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --ficct-green:       #1a5c38;
+  --ficct-green-dark:  #0d1f13;
+  --ficct-green-mid:   #122b19;
+  --ficct-gold:        #c8a84b;
+  --ficct-gold-light:  #e4c97e;
+  --ficct-cream:       #f5f0e8;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+/* ── Base ── */
+* { box-sizing: border-box; }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Outfit', 'Inter', Arial, sans-serif;
+  background: #f8faf8;
+  color: #111827;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Scrollbar global ── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #1a5c3840; border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: #1a5c3880; }
+
+/* ── Animaciones ── */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes pulse-live {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.5; }
+}
+@keyframes shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position:  200% center; }
+}
+
+.animate-fade-in-up { animation: fadeInUp 0.4s ease both; }
+.animate-pulse { animation: pulse-live 1.5s ease-in-out infinite; }
+
+/* ── Utilidades FICCT ── */
+.ficct-gradient {
+  background: linear-gradient(135deg, var(--ficct-green-dark) 0%, var(--ficct-green) 50%, var(--ficct-green-dark) 100%);
+}
+.gold-text {
+  background: linear-gradient(90deg, var(--ficct-gold), var(--ficct-gold-light), var(--ficct-gold));
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── Esconde scrollbar en móvil (tabs) ── */
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* ── @media print ── */
+@media print {
+  body { background: white !important; color: black !important; font-family: 'Outfit', Arial, sans-serif; }
+  header, nav, footer, .print\:hidden { display: none !important; }
+  #standings-table, .print\:block { display: block !important; }
+  * { color: black !important; background: white !important; border-color: #ddd !important; }
+  .rounded-2xl { border: 1px solid #ddd !important; }
+  a { text-decoration: none !important; color: black !important; }
 }
