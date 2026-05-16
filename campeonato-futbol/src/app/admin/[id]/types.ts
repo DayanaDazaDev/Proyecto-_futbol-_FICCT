@@ -40,6 +40,7 @@ export type Match = {
   match_time: string | null;
   location: string | null;
   referee_notes: string | null;
+  match_started_at: string | null;
 };
 
 export type MatchEvent = {

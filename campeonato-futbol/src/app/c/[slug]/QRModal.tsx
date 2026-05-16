@@ -63,7 +63,7 @@ export default function QRModal({ url, tournamentName }: Props) {
               <QRCodeSVG
                 value={url}
                 size={200}
-                fgColor="#1a5c38"
+                fgColor="#c41e1e"
                 bgColor="#ffffff"
                 level="H"
                 includeMargin={false}
@@ -74,7 +74,7 @@ export default function QRModal({ url, tournamentName }: Props) {
 
             <button
               onClick={downloadQR}
-              className="w-full flex items-center justify-center gap-2 bg-[#1a5c38] hover:bg-[#14472b] text-white font-bold py-3 rounded-xl transition-colors"
+              className="w-full flex items-center justify-center gap-2 bg-[#c41e1e] hover:bg-[#a01515] text-white font-bold py-3 rounded-xl transition-colors"
             >
               <Download className="w-4 h-4" />
               Descargar QR (PNG)

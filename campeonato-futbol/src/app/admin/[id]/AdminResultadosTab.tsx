@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Save, Loader2, Plus, Trash2, ChevronDown, ChevronUp } from "lucide-react";
+import { Save, Loader2, Plus, Trash2, ChevronDown, ChevronUp, Play, Square } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import type { Match, Team, Player, MatchEvent } from "./types";
 import { EVENT_LABELS, STATUS_CONFIG } from "./types";
@@ -63,6 +63,32 @@ export default function AdminResultadosTab({ initialMatches, teams, tournamentId
     if (data) setMatches(prev => prev.map(m => m.id === matchId ? data : m));
     else alert("Error al guardar el partido");
 
+    setSavingMatches(prev => ({ ...prev, [matchId]: false }));
+  };
+
+  const handleStartMatch = async (matchId: string) => {
+    setSavingMatches(prev => ({ ...prev, [matchId]: true }));
+    const now = new Date().toISOString();
+    const { data } = await supabase
+      .from("matches")
+      .update({ status: "live", match_started_at: now, updated_at: now })
+      .eq("id", matchId).select().single();
+    if (data) setMatches(prev => prev.map(m => m.id === matchId ? data : m));
+    setSavingMatches(prev => ({ ...prev, [matchId]: false }));
+  };
+
+  const handleFinishMatch = async (matchId: string) => {
+    const match = matches.find(m => m.id === matchId);
+    if (!match) return;
+    setSavingMatches(prev => ({ ...prev, [matchId]: true }));
+    const isScored = match.home_goals !== null && match.away_goals !== null;
+    const payload = {
+      status: "finished",
+      is_played: isScored,
+      updated_at: new Date().toISOString(),
+    };
+    const { data } = await supabase.from("matches").update(payload).eq("id", matchId).select().single();
+    if (data) setMatches(prev => prev.map(m => m.id === matchId ? data : m));
     setSavingMatches(prev => ({ ...prev, [matchId]: false }));
   };
 
@@ -144,10 +170,29 @@ export default function AdminResultadosTab({ initialMatches, teams, tournamentId
               <div className="flex items-center justify-between mb-4">
                 <span className="text-xs font-bold text-green-700 uppercase tracking-wider">{match.round}</span>
                 <div className="flex items-center gap-2">
+                  {/* Botones de control de partido */}
+                  {match.status === "scheduled" && (
+                    <button
+                      onClick={() => handleStartMatch(match.id)}
+                      disabled={savingMatches[match.id]}
+                      className="flex items-center gap-1 text-xs font-bold bg-green-600 hover:bg-green-700 text-white px-2.5 py-1 rounded-full transition-colors disabled:opacity-50"
+                    >
+                      <Play className="w-3 h-3" /> Iniciar
+                    </button>
+                  )}
                   {match.status === "live" && (
-                    <span className="flex items-center gap-1 text-xs font-bold text-green-600 bg-green-100 px-2 py-0.5 rounded-full animate-pulse">
-                      🟢 EN VIVO
-                    </span>
+                    <>
+                      <span className="flex items-center gap-1 text-xs font-bold text-green-600 bg-green-100 px-2 py-0.5 rounded-full animate-pulse">
+                        🟢 EN VIVO
+                      </span>
+                      <button
+                        onClick={() => handleFinishMatch(match.id)}
+                        disabled={savingMatches[match.id]}
+                        className="flex items-center gap-1 text-xs font-bold bg-red-600 hover:bg-red-700 text-white px-2.5 py-1 rounded-full transition-colors disabled:opacity-50"
+                      >
+                        <Square className="w-3 h-3" /> Finalizar
+                      </button>
+                    </>
                   )}
                   {match.status === "finished" && <span className="text-xs font-bold bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">⚫ FINALIZADO</span>}
                   {match.status === "cancelled" && <span className="text-xs font-bold bg-orange-100 text-orange-600 px-2 py-0.5 rounded-full">⚠ SUSPENDIDO</span>}
